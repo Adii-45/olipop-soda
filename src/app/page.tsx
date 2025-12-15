@@ -25,12 +25,19 @@ export default function Home() {
   const [initialLoadProgress, setInitialLoadProgress] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const currentVariant = drinkVariants[currentVariantIndex];
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--brand-accent', currentVariant.themeColor);
-  }, [currentVariant]);
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      document.documentElement.style.setProperty('--brand-accent', currentVariant.themeColor);
+    }
+  }, [currentVariant, isMounted]);
 
   const handleNextVariant = () => {
     setIsSwitching(true);
@@ -50,6 +57,9 @@ export default function Home() {
     }
   }, [isInitialLoading, isAnimationComplete]);
 
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>
