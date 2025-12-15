@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import { navLinks } from '@/app/data';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '../ui/button';
 import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
@@ -13,29 +13,39 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  useEffect(() => {
+    navLinks.forEach(link => {
+      sectionRefs.current[link.href.substring(1)] = document.getElementById(link.href.substring(1));
+    });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
+      const scrollY = window.scrollY;
+      setScrolled(scrollY > 10);
 
-      const sections = navLinks.map(link => document.getElementById(link.href.substring(1)));
       let currentSection = '';
-      for (const section of sections) {
-        if (section && window.scrollY >= section.offsetTop - 100) {
-          currentSection = section.id;
+      for (const link of navLinks) {
+        const id = link.href.substring(1);
+        const section = sectionRefs.current[id];
+        
+        if (section && scrollY >= section.offsetTop - 100) {
+          currentSection = id;
         }
       }
       setActiveSection(currentSection);
     };
     
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <header className={cn(
-      "sticky top-0 z-40 w-full transition-colors duration-300",
+      "sticky top-0 z-50 w-full transition-colors duration-300",
       scrolled ? 'bg-background/80 backdrop-blur-sm border-b border-border' : 'bg-transparent'
     )}>
       <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">

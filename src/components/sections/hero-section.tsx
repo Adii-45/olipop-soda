@@ -44,31 +44,30 @@ export default function HeroSection({
     if (isSwitching) {
       setIsTextVisible(false);
     } else {
+      // Short delay to allow the new variant to settle before fading in text
       timer = setTimeout(() => {
         setIsTextVisible(true);
-      }, 100);
+      }, 100); 
     }
     return () => clearTimeout(timer);
   }, [isSwitching, variant.id]);
 
   useEffect(() => {
     const handleScroll = () => {
-      const rect = heroRef.current?.getBoundingClientRect();
-      if (rect) {
         const scrollTop = window.scrollY;
         const currentProgress = Math.min(1, Math.max(0, scrollTop / scrollHeight));
         setProgress(currentProgress);
-      }
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    handleScroll(); // Initial check
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, [scrollHeight]);
 
   return (
-    <section id="hero" ref={heroRef} style={{ height: `calc(100vh + ${scrollHeight}px)` }} className="relative">
-      <div className="sticky top-0 h-screen w-full">
-        <div className="absolute inset-0 bg-black/40 z-10"></div>
+    <section id="hero" ref={heroRef} style={{ height: `${scrollHeight}px` }} className="relative">
+      <div className="sticky top-0 h-screen w-full overflow-hidden">
         <WebpSequence
           key={variant.id}
           variant={variant}
@@ -78,8 +77,9 @@ export default function HeroSection({
           onSwitchComplete={onSwitchComplete}
           isSwitching={isSwitching}
         />
+        <div className="absolute inset-0 bg-black/40 z-10"></div>
         
-        <div className="container mx-auto px-4 md:px-6 relative z-20 h-full">
+        <div className="container mx-auto px-4 md:px-6 relative z-30 h-full">
           <div className="grid grid-cols-12 h-full items-center">
             
             <div className="col-span-12 md:col-span-5">
@@ -129,7 +129,7 @@ export default function HeroSection({
           
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6">
             {socialLinks.map(link => {
-              const Icon = Icons[link.icon as keyof typeof Icons];
+              const Icon = Icons[link.icon];
               return (
                 <Link key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary transition-colors">
                   <Icon className="w-6 h-6" />
