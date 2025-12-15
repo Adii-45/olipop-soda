@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { drinkVariants } from '@/app/data';
 import Preloader from '@/components/preloader';
 import Header from '@/components/layout/header';
-import HeroSection from '@/components/sections/hero-section';
 import AboutSection from '@/components/sections/about-section';
 import IngredientsSection from '@/components/sections/ingredients-section';
 import NutritionSection from '@/components/sections/nutrition-section';
@@ -12,6 +12,11 @@ import ReviewsSection from '@/components/sections/reviews-section';
 import FaqSection from '@/components/sections/faq-section';
 import CtaSection from '@/components/sections/cta-section';
 import Footer from '@/components/layout/footer';
+
+const HeroSection = dynamic(() => import('@/components/sections/hero-section'), {
+  ssr: false,
+  loading: () => <div className="h-screen w-full" />,
+});
 
 export default function Home() {
   const [currentVariantIndex, setCurrentVariantIndex] = useState(0);
@@ -34,7 +39,7 @@ export default function Home() {
     setIsSwitching(true);
     setCurrentVariantIndex((prevIndex) => (prevIndex - 1 + drinkVariants.length) % drinkVariants.length);
   };
-  
+
   useEffect(() => {
     if (isInitialLoading) {
       document.body.style.overflow = 'hidden';
@@ -45,7 +50,6 @@ export default function Home() {
       document.body.style.overflow = 'auto';
     };
   }, [isInitialLoading]);
-
 
   return (
     <>
