@@ -18,7 +18,7 @@ export const drinkVariants: DrinkVariant[] = [
     description: 'A modern take on a classic soda with a perfect blend of sweet and tart, full of nostalgic flavor.',
     themeColor: '0 84% 60%',
     webpBaseUrl: 'https://rkajpvjfkkinfiysubsn.supabase.co/storage/v1/object/public/cherry/frame_000_delay-0.04s.webp',
-    frameCount: 240,
+    frameCount: 200,
   },
   {
     id: 2,
@@ -27,7 +27,7 @@ export const drinkVariants: DrinkVariant[] = [
     description: 'A modern functional soda brand inspired by classic flavors but made with better ingredients.',
     themeColor: '270 70% 60%',
     webpBaseUrl: 'https://rkajpvjfkkinfiysubsn.supabase.co/storage/v1/object/public/grapes/frame_000_delay-0.04s.webp',
-    frameCount: 240,
+    frameCount: 200,
   },
   {
     id: 3,
@@ -36,7 +36,7 @@ export const drinkVariants: DrinkVariant[] = [
     description: 'Bright and refreshing citrus soda with natural lemon spark and crisp bubbles.',
     themeColor: '50 90% 60%',
     webpBaseUrl: 'https://rkajpvjfkkinfiysubsn.supabase.co/storage/v1/object/public/lemon/frame_000_delay-0.04s.webp',
-    frameCount: 240,
+    frameCount: 200,
   },
 ];
 
