@@ -35,12 +35,15 @@ export default function Footer() {
           <div className="text-center md:text-left">
             <h3 className="font-bold mb-4">Follow Us</h3>
             <div className="flex justify-center md:justify-start items-center gap-4">
-              {socialLinks.map(link => (
-                <Link key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                  <Icons[link.icon] className="w-6 h-6" />
-                  <span className="sr-only">{link.name}</span>
-                </Link>
-              ))}
+              {socialLinks.map(link => {
+                const Icon = Icons[link.icon];
+                return (
+                  <Link key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                    <Icon className="w-6 h-6" />
+                    <span className="sr-only">{link.name}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

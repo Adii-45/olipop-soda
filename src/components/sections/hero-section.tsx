@@ -106,12 +106,15 @@ export default function HeroSection({
         </div>
         
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6">
-          {socialLinks.map(link => (
-            <Link key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary transition-colors">
-              <Icons[link.icon] className="w-6 h-6" />
-              <span className="sr-only">{link.name}</span>
-            </Link>
-          ))}
+          {socialLinks.map(link => {
+            const Icon = Icons[link.icon];
+            return (
+              <Link key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary transition-colors">
+                <Icon className="w-6 h-6" />
+                <span className="sr-only">{link.name}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
