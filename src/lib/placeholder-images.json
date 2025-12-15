@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "about-drink",
+      "description": "A lifestyle image showing people enjoying Olipop.",
+      "imageUrl": "https://images.unsplash.com/photo-1479480374076-c5929dddcc47?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZW9wbGUlMjBzb2RhfGVufDB8fHx8MTc2NTc4NTMzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "people soda"
+    },
+    {
+      "id": "ingredients-bg",
+      "description": "A background image showing fresh fruits like cherries, grapes, and lemons.",
+      "imageUrl": "https://images.unsplash.com/photo-1752327091765-388c77768b9c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxmcnVpdHMlMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc2NTc4NTMzOXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fruits background"
+    },
+    {
+      "id": "review-avatar-1",
+      "description": "Avatar for a reviewer.",
+      "imageUrl": "https://images.unsplash.com/photo-1531123414780-f74242c2b052?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzY1NzczMTE0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "review-avatar-2",
+      "description": "Avatar for a reviewer.",
+      "imageUrl": "https://images.unsplash.com/photo-1521119989659-a83eee488004?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjU3NzMxMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "review-avatar-3",
+      "description": "Avatar for a reviewer.",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjU3NzMxMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "review-avatar-4",
+      "description": "Avatar for a reviewer.",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjU3NzMxMTR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "cta-grape-can",
+      "description": "A studio shot of the Grape Soda can surrounded by grapes.",
+      "imageUrl": "https://images.unsplash.com/photo-1630404365865-97ff92feba6a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzb2RhJTIwY2FufGVufDB8fHx8MTc2NTcyNzE3Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soda can"
+    }
+  ]
 }
