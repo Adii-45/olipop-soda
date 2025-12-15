@@ -106,7 +106,9 @@ export default function WebpSequence({
     if (firstImg && firstImg.complete) {
         handleResize();
     } else if (firstImg) {
-        firstImg.onload = handleResize;
+        firstImg.onload = () => {
+          handleResize();
+        };
     }
     
     return () => window.removeEventListener('resize', handleResize);
