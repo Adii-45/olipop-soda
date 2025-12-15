@@ -58,7 +58,7 @@ export default function Footer() {
         </div>
         <Separator className="my-8 bg-border" />
         <div className="text-center text-sm text-muted-foreground">
-          © {currentYear || new Date().getFullYear()} Olipop. All Rights Reserved.
+          © {currentYear} Olipop. All Rights Reserved.
         </div>
       </div>
     </footer>
