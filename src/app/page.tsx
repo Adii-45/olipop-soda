@@ -24,7 +24,6 @@ export default function Home() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialLoadProgress, setInitialLoadProgress] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
-  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const currentVariant = drinkVariants[currentVariantIndex];
@@ -49,14 +48,6 @@ export default function Home() {
     setCurrentVariantIndex((prevIndex) => (prevIndex - 1 + drinkVariants.length) % drinkVariants.length);
   };
   
-  useEffect(() => {
-    if (isInitialLoading || !isAnimationComplete) {
-      document.body.classList.add('no-scroll');
-    } else {
-      document.body.classList.remove('no-scroll');
-    }
-  }, [isInitialLoading, isAnimationComplete]);
-
   if (!isMounted) {
     return null;
   }
@@ -76,14 +67,8 @@ export default function Home() {
             onSwitchComplete={() => setIsSwitching(false)}
             onInitialLoadComplete={() => setIsInitialLoading(false)}
             onInitialLoadProgress={setInitialLoadProgress}
-            onAnimationComplete={setIsAnimationComplete}
           />
-          <div
-            className={cn(
-              'bg-background relative z-[15] transition-opacity duration-500',
-              isAnimationComplete ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            )}
-          >
+          <div className="bg-background relative z-[15]">
               <AboutSection />
               <IngredientsSection />
               <NutritionSection />

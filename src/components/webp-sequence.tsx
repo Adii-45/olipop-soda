@@ -6,35 +6,27 @@ import { cn } from '@/lib/utils';
 
 interface WebpSequenceProps {
   variant: DrinkVariant;
+  progress: number;
   onInitialLoadComplete: () => void;
   onInitialLoadProgress: (progress: number) => void;
   onSwitchComplete: () => void;
   isSwitching: boolean;
-  onAnimationComplete: (isComplete: boolean) => void;
 }
 
-const INITIAL_PRELOAD_COUNT = 30; // Number of frames to load initially
-const SCROLL_SENSITIVITY = 1000; // Determines how much scroll animates, adjust for feel
-const DAMPING = 0.9; // Smooths out the animation
+const INITIAL_PRELOAD_COUNT = 30; // Number of frames to load initially for fast startup
 
 export default function WebpSequence({
   variant,
+  progress,
   onInitialLoadComplete,
   onInitialLoadProgress,
   onSwitchComplete,
   isSwitching,
-  onAnimationComplete,
 }: WebpSequenceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const loadedImagesCount = useRef(0);
   const isInitialLoad = useRef(true);
-  const isInitialBatchLoaded = useRef(false);
-
-  const virtualScroll = useRef(0);
-  const frameIndex = useRef(0);
-  const animationFrameId = useRef<number>();
-
   const [isMounted, setIsMounted] = useState(false);
 
   // === IMAGE PRELOADING LOGIC ===
@@ -45,22 +37,22 @@ export default function WebpSequence({
 
   const preloadImages = useCallback(async () => {
     const { frameCount } = variant;
-    const promises: Promise<void>[] = [];
     loadedImagesCount.current = 0;
     imagesRef.current = Array(frameCount).fill(null).map(() => new Image());
 
-    const onImageLoad = (isInitial: boolean) => {
+    const onImageLoad = (isInitialBatch: boolean) => {
       loadedImagesCount.current++;
-      const total = isInitial ? INITIAL_PRELOAD_COUNT : frameCount;
-      const progress = (loadedImagesCount.current / total) * 100;
+      const total = isInitialBatch ? INITIAL_PRELOAD_COUNT : frameCount;
+      const loadProgress = (loadedImagesCount.current / total) * 100;
       
-      if (isInitialLoad.current) {
-        onInitialLoadProgress(progress);
+      if (isInitialLoad.current && isInitialBatch) {
+        onInitialLoadProgress(loadProgress);
       }
     };
     
     // Initial batch for fast interaction
-    for (let i = 0; i < INITIAL_PRELOAD_COUNT; i++) {
+    const initialPromises: Promise<void>[] = [];
+    for (let i = 0; i < INITIAL_PRELOAD_COUNT && i < frameCount; i++) {
       const img = imagesRef.current[i];
       const promise = new Promise<void>((resolve) => {
         img.onload = () => {
@@ -70,19 +62,17 @@ export default function WebpSequence({
         img.onerror = () => resolve(); // Don't block on error
       });
       img.src = getFrameUrl(i);
-      promises.push(promise);
+      initialPromises.push(promise);
     }
     
-    await Promise.all(promises);
+    await Promise.all(initialPromises);
 
-    isInitialBatchLoaded.current = true;
     if (isInitialLoad.current) {
       onInitialLoadComplete();
       isInitialLoad.current = false;
     } else {
       onSwitchComplete();
     }
-    drawFrame();
 
     // Lazy load the rest
     for (let i = INITIAL_PRELOAD_COUNT; i < frameCount; i++) {
@@ -92,6 +82,7 @@ export default function WebpSequence({
     }
   }, [variant, onInitialLoadComplete, onInitialLoadProgress, onSwitchComplete, getFrameUrl]);
 
+
   // === DRAWING LOGIC ===
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -100,8 +91,10 @@ export default function WebpSequence({
     const context = canvas.getContext('2d');
     if (!context) return;
     
-    // Find the closest loaded frame if the target isn't ready
-    let frameToDraw = Math.round(frameIndex.current);
+    const frameIndex = Math.max(0, Math.min(variant.frameCount - 1, Math.floor(progress * variant.frameCount)));
+
+    let frameToDraw = frameIndex;
+    // Fallback to the last loaded frame if the target isn't ready
     while(!imagesRef.current[frameToDraw]?.complete && frameToDraw > 0) {
       frameToDraw--;
     }
@@ -117,42 +110,16 @@ export default function WebpSequence({
 
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
-  }, [isMounted]);
-
-  // === ANIMATION LOOP ===
-  const animate = useCallback(() => {
-    const progress = virtualScroll.current;
-    const newFrame = progress * (variant.frameCount - 1);
-    
-    // Apply damping
-    const diff = newFrame - frameIndex.current;
-    if (Math.abs(diff) > 0.01) {
-      frameIndex.current += diff * (1 - DAMPING);
-      drawFrame();
-      animationFrameId.current = requestAnimationFrame(animate);
-    } else if (frameIndex.current !== newFrame) {
-      frameIndex.current = newFrame;
-      drawFrame();
-    }
-  }, [variant.frameCount, drawFrame]);
+  }, [isMounted, progress, variant.frameCount]);
 
 
-  // === EVENT LISTENERS & LIFECYCLE ===
+  // === LIFECYCLE & EVENT LISTENERS ===
   useEffect(() => {
     setIsMounted(true);
-    return () => {
-      if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-    }
   }, []);
 
   useEffect(() => {
     if (isMounted) {
-      // Reset state for new variant
-      isInitialBatchLoaded.current = false;
-      virtualScroll.current = 0;
-      frameIndex.current = 0;
-      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-      
       preloadImages();
     }
   }, [isMounted, preloadImages]);
@@ -172,39 +139,17 @@ export default function WebpSequence({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isMounted, drawFrame]);
-
+  
   useEffect(() => {
-    if (!isMounted || !isInitialBatchLoaded.current) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      
-      const newVirtualScroll = virtualScroll.current + e.deltaY / SCROLL_SENSITIVITY;
-      virtualScroll.current = Math.max(0, Math.min(1, newVirtualScroll));
-
-      // Start animation loop
-      if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-      animationFrameId.current = requestAnimationFrame(animate);
-
-      // Report animation completion
-      const isComplete = virtualScroll.current >= 1;
-      onAnimationComplete(isComplete);
-    };
-
-    const el = canvasRef.current?.parentElement;
-    if (el) {
-      el.addEventListener('wheel', handleWheel, { passive: false });
-      return () => {
-        el.removeEventListener('wheel', handleWheel);
-        if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-      };
+    if (isMounted) {
+      requestAnimationFrame(drawFrame);
     }
-  }, [isMounted, isSwitching, onAnimationComplete, animate]);
+  }, [isMounted, progress, drawFrame]);
 
 
   return (
     <div className={cn(
-      "fixed top-0 left-0 h-screen w-full z-0 transition-opacity duration-500",
+      "absolute top-0 left-0 h-full w-full z-0 transition-opacity duration-500",
       isSwitching ? 'opacity-30' : 'opacity-100'
     )}>
       <canvas
