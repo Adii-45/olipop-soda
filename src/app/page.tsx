@@ -23,6 +23,7 @@ export default function Home() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [initialLoadProgress, setInitialLoadProgress] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
 
   const currentVariant = drinkVariants[currentVariantIndex];
 
@@ -33,23 +34,25 @@ export default function Home() {
   const handleNextVariant = () => {
     setIsSwitching(true);
     setCurrentVariantIndex((prevIndex) => (prevIndex + 1) % drinkVariants.length);
+    setIsAnimationComplete(false);
   };
 
   const handlePrevVariant = () => {
     setIsSwitching(true);
     setCurrentVariantIndex((prevIndex) => (prevIndex - 1 + drinkVariants.length) % drinkVariants.length);
+    setIsAnimationComplete(false);
   };
 
   useEffect(() => {
-    if (isInitialLoading) {
-      document.body.style.overflow = 'hidden';
+    if (isInitialLoading || !isAnimationComplete) {
+      document.body.classList.add('no-scroll');
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.classList.remove('no-scroll');
     }
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.classList.remove('no-scroll');
     };
-  }, [isInitialLoading]);
+  }, [isInitialLoading, isAnimationComplete]);
 
   return (
     <>
@@ -66,17 +69,22 @@ export default function Home() {
             onSwitchComplete={() => setIsSwitching(false)}
             onInitialLoadComplete={() => setIsInitialLoading(false)}
             onInitialLoadProgress={setInitialLoadProgress}
+            onAnimationComplete={setIsAnimationComplete}
+            isAnimationComplete={isAnimationComplete}
           />
-          <div className="bg-background relative z-10">
-            <AboutSection />
-            <IngredientsSection />
-            <NutritionSection />
-            <ReviewsSection />
-            <FaqSection />
-            <CtaSection />
-          </div>
+          {isAnimationComplete && (
+            <div className="bg-background relative z-10">
+              <AboutSection />
+              <IngredientsSection />
+              <NutritionSection />
+              <ReviewsSection />
+              <FaqSection />
+              <CtaSection />
+              <Footer />
+            </div>
+          )}
         </main>
-        <Footer />
+        {!isAnimationComplete && <Footer />}
       </div>
     </>
   );

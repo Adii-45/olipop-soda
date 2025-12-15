@@ -19,6 +19,8 @@ interface HeroSectionProps {
   onSwitchComplete: () => void;
   onInitialLoadComplete: () => void;
   onInitialLoadProgress: (progress: number) => void;
+  onAnimationComplete: (isComplete: boolean) => void;
+  isAnimationComplete: boolean;
 }
 
 export default function HeroSection({
@@ -30,6 +32,8 @@ export default function HeroSection({
   onSwitchComplete,
   onInitialLoadComplete,
   onInitialLoadProgress,
+  onAnimationComplete,
+  isAnimationComplete
 }: HeroSectionProps) {
   const [isTextVisible, setIsTextVisible] = useState(false);
 
@@ -47,7 +51,10 @@ export default function HeroSection({
   }, [isSwitching, variant.id]);
 
   return (
-    <section id="hero" className="h-screen w-full sticky top-0 flex items-center justify-center">
+    <section id="hero" className={cn(
+      "w-full transition-all duration-500",
+      isAnimationComplete ? 'relative h-auto' : 'fixed top-0 left-0 h-screen'
+    )}>
       <div className="absolute inset-0 bg-black/40 z-10"></div>
       <WebpSequence
         key={variant.id}
@@ -56,6 +63,7 @@ export default function HeroSection({
         onInitialLoadProgress={onInitialLoadProgress}
         onSwitchComplete={onSwitchComplete}
         isSwitching={isSwitching}
+        onAnimationComplete={onAnimationComplete}
       />
       
       <div className="container mx-auto px-4 md:px-6 relative z-20 h-full">
@@ -108,7 +116,7 @@ export default function HeroSection({
         
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6">
           {socialLinks.map(link => {
-            const Icon = Icons[link.icon];
+            const Icon = Icons[link.icon as keyof typeof Icons];
             return (
               <Link key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary transition-colors">
                 <Icon className="w-6 h-6" />

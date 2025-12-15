@@ -9,15 +9,17 @@ interface WebpSequenceProps {
   onInitialLoadProgress: (progress: number) => void;
   onSwitchComplete: () => void;
   isSwitching: boolean;
+  onAnimationComplete: (isComplete: boolean) => void;
 }
 
-const SCROLL_ANIMATION_SPEED = 1; // Adjust this to control animation speed relative to scroll.
+const SCROLL_SENSITIVITY = 0.5; // Adjust to control animation speed
 
 export default function WebpSequence({
   variant,
   onInitialLoadComplete,
   onInitialLoadProgress,
   onSwitchComplete,
+  onAnimationComplete,
 }: WebpSequenceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
@@ -27,7 +29,10 @@ export default function WebpSequence({
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // When component mounts or variant changes, animation is not complete
+    onAnimationComplete(false); 
+    frameIndexRef.current = 0;
+  }, [variant.id, onAnimationComplete]);
 
   const getFrameUrl = useCallback((frame: number) => {
     const paddedFrame = String(frame).padStart(3, '0');
@@ -67,7 +72,6 @@ export default function WebpSequence({
     }
   }, [variant, onInitialLoadComplete, onInitialLoadProgress, onSwitchComplete, getFrameUrl]);
 
-
   useEffect(() => {
     if (mounted) {
       preloadImages();
@@ -94,64 +98,65 @@ export default function WebpSequence({
     context.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
   }, []);
   
-  // Effect for drawing and resizing
   useEffect(() => {
     if (!mounted) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const handleResize = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        requestAnimationFrame(drawFrame);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      requestAnimationFrame(drawFrame);
     }
 
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // Initial draw
     const firstImg = imagesRef.current[0];
     if (firstImg && firstImg.complete) {
-        handleResize();
+      handleResize();
     } else if (firstImg) {
-        firstImg.onload = () => {
-          handleResize();
-        };
+      firstImg.onload = handleResize;
     }
     
     return () => window.removeEventListener('resize', handleResize);
   }, [drawFrame, mounted]);
   
-
-  // Effect for scroll handling
   useEffect(() => {
     if (!mounted) return;
-    const handleScroll = () => {
-      // This is the logic inspired by the getScrollBasedFrameIndex Genkit flow.
-      // You can adjust the scroll behavior by modifying the calculation below.
-      // For instance, changing SCROLL_ANIMATION_SPEED can speed up or slow down the animation relative to scroll distance.
-      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (scrollableHeight <= 0) return;
 
-      const scrollFraction = (window.scrollY / scrollableHeight) * SCROLL_ANIMATION_SPEED;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
       
-      const newFrameIndex = Math.min(
-        variant.frameCount - 1,
-        Math.max(0, Math.floor(scrollFraction * variant.frameCount))
-      );
+      let newFrameIndex = frameIndexRef.current;
+      if (e.deltaY > 0) { // Scrolling down
+        newFrameIndex = Math.min(frameIndexRef.current + SCROLL_SENSITIVITY, variant.frameCount - 1);
+      } else { // Scrolling up
+        newFrameIndex = Math.max(frameIndexRef.current - SCROLL_SENSITIVITY, 0);
+      }
+
+      newFrameIndex = Math.round(newFrameIndex);
 
       if (newFrameIndex !== frameIndexRef.current) {
         frameIndexRef.current = newFrameIndex;
         requestAnimationFrame(drawFrame);
       }
+
+      // Check for animation completion
+      if (newFrameIndex >= variant.frameCount - 1) {
+        onAnimationComplete(true);
+      } else {
+        onAnimationComplete(false);
+      }
     };
     
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const mainElement = document.querySelector('main');
+    mainElement?.addEventListener('wheel', handleWheel, { passive: false });
     
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      mainElement?.removeEventListener('wheel', handleWheel);
     };
-  }, [variant.frameCount, drawFrame, mounted]);
+  }, [variant.frameCount, drawFrame, mounted, onAnimationComplete]);
 
   if (!mounted) {
     return <div className="absolute top-0 left-0 w-full h-full object-cover" />;
