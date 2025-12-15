@@ -1,9 +1,18 @@
+'use client';
+
 import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import { socialLinks } from '@/app/data';
 import { Separator } from '../ui/separator';
+import { useEffect, useState } from 'react';
 
 export default function Footer() {
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="bg-black text-primary-foreground border-t border-border">
       <div className="container mx-auto px-4 md:px-6 py-12">
@@ -49,7 +58,7 @@ export default function Footer() {
         </div>
         <Separator className="my-8 bg-border" />
         <div className="text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Olipop. All Rights Reserved.
+          © {currentYear} Olipop. All Rights Reserved.
         </div>
       </div>
     </footer>
