@@ -23,6 +23,11 @@ export default function WebpSequence({
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const frameIndexRef = useRef(0);
   const isInitialLoad = useRef(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getFrameUrl = useCallback((frame: number) => {
     const paddedFrame = String(frame).padStart(3, '0');
@@ -64,8 +69,10 @@ export default function WebpSequence({
 
 
   useEffect(() => {
-    preloadImages();
-  }, [preloadImages]);
+    if (mounted) {
+      preloadImages();
+    }
+  }, [preloadImages, mounted]);
 
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;
@@ -89,6 +96,7 @@ export default function WebpSequence({
   
   // Effect for drawing and resizing
   useEffect(() => {
+    if (!mounted) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -112,11 +120,12 @@ export default function WebpSequence({
     }
     
     return () => window.removeEventListener('resize', handleResize);
-  }, [drawFrame]);
+  }, [drawFrame, mounted]);
   
 
   // Effect for scroll handling
   useEffect(() => {
+    if (!mounted) return;
     const handleScroll = () => {
       // This is the logic inspired by the getScrollBasedFrameIndex Genkit flow.
       // You can adjust the scroll behavior by modifying the calculation below.
@@ -142,8 +151,11 @@ export default function WebpSequence({
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [variant.frameCount, drawFrame]);
+  }, [variant.frameCount, drawFrame, mounted]);
 
+  if (!mounted) {
+    return <div className="absolute top-0 left-0 w-full h-full object-cover" />;
+  }
 
   return (
     <canvas
