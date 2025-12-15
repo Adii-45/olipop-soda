@@ -50,6 +50,7 @@ export default function HeroSection({
     <section id="hero" className="h-screen w-full sticky top-0 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 z-10"></div>
       <WebpSequence
+        key={variant.id}
         variant={variant}
         onInitialLoadComplete={onInitialLoadComplete}
         onInitialLoadProgress={onInitialLoadProgress}
