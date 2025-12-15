@@ -20,7 +20,6 @@ interface HeroSectionProps {
   onInitialLoadComplete: () => void;
   onInitialLoadProgress: (progress: number) => void;
   onAnimationComplete: (isComplete: boolean) => void;
-  isAnimationComplete: boolean;
 }
 
 export default function HeroSection({
@@ -33,7 +32,6 @@ export default function HeroSection({
   onInitialLoadComplete,
   onInitialLoadProgress,
   onAnimationComplete,
-  isAnimationComplete
 }: HeroSectionProps) {
   const [isTextVisible, setIsTextVisible] = useState(false);
 
@@ -51,10 +49,7 @@ export default function HeroSection({
   }, [isSwitching, variant.id]);
 
   return (
-    <section id="hero" className={cn(
-      "w-full transition-all duration-500",
-      isAnimationComplete ? 'relative h-auto' : 'fixed top-0 left-0 h-screen'
-    )}>
+    <section id="hero" className="relative h-screen w-full">
       <div className="absolute inset-0 bg-black/40 z-10"></div>
       <WebpSequence
         key={variant.id}

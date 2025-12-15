@@ -12,6 +12,7 @@ import ReviewsSection from '@/components/sections/reviews-section';
 import FaqSection from '@/components/sections/faq-section';
 import CtaSection from '@/components/sections/cta-section';
 import Footer from '@/components/layout/footer';
+import { cn } from '@/lib/utils';
 
 const HeroSection = dynamic(() => import('@/components/sections/hero-section'), {
   ssr: false,
@@ -34,30 +35,26 @@ export default function Home() {
   const handleNextVariant = () => {
     setIsSwitching(true);
     setCurrentVariantIndex((prevIndex) => (prevIndex + 1) % drinkVariants.length);
-    setIsAnimationComplete(false);
   };
 
   const handlePrevVariant = () => {
     setIsSwitching(true);
     setCurrentVariantIndex((prevIndex) => (prevIndex - 1 + drinkVariants.length) % drinkVariants.length);
-    setIsAnimationComplete(false);
   };
-
+  
   useEffect(() => {
     if (isInitialLoading || !isAnimationComplete) {
       document.body.classList.add('no-scroll');
     } else {
       document.body.classList.remove('no-scroll');
     }
-    return () => {
-      document.body.classList.remove('no-scroll');
-    };
   }, [isInitialLoading, isAnimationComplete]);
+
 
   return (
     <>
       <Preloader isLoading={isInitialLoading} progress={initialLoadProgress} />
-      <div className={`transition-opacity duration-500 ${isInitialLoading ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={cn("transition-opacity duration-500", isInitialLoading ? "opacity-0" : "opacity-100")}>
         <Header />
         <main>
           <HeroSection
@@ -70,21 +67,22 @@ export default function Home() {
             onInitialLoadComplete={() => setIsInitialLoading(false)}
             onInitialLoadProgress={setInitialLoadProgress}
             onAnimationComplete={setIsAnimationComplete}
-            isAnimationComplete={isAnimationComplete}
           />
-          {isAnimationComplete && (
-            <div className="bg-background relative z-10">
+          <div
+            className={cn(
+              'bg-background relative z-[15] transition-opacity duration-500',
+              isAnimationComplete ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}
+          >
               <AboutSection />
               <IngredientsSection />
               <NutritionSection />
               <ReviewsSection />
               <FaqSection />
               <CtaSection />
-              <Footer />
-            </div>
-          )}
+          </div>
         </main>
-        {!isAnimationComplete && <Footer />}
+        <Footer />
       </div>
     </>
   );

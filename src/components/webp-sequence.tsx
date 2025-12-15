@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { DrinkVariant } from '@/app/data';
+import { cn } from '@/lib/utils';
 
 interface WebpSequenceProps {
   variant: DrinkVariant;
@@ -12,28 +13,31 @@ interface WebpSequenceProps {
   onAnimationComplete: (isComplete: boolean) => void;
 }
 
-const SCROLL_SENSITIVITY = 0.5; // Adjust to control animation speed
+const INITIAL_PRELOAD_COUNT = 30; // Number of frames to load initially
+const SCROLL_SENSITIVITY = 1000; // Determines how much scroll animates, adjust for feel
+const DAMPING = 0.9; // Smooths out the animation
 
 export default function WebpSequence({
   variant,
   onInitialLoadComplete,
   onInitialLoadProgress,
   onSwitchComplete,
+  isSwitching,
   onAnimationComplete,
 }: WebpSequenceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<HTMLImageElement[]>([]);
-  const frameIndexRef = useRef(0);
+  const loadedImagesCount = useRef(0);
   const isInitialLoad = useRef(true);
-  const [mounted, setMounted] = useState(false);
+  const isInitialBatchLoaded = useRef(false);
 
-  useEffect(() => {
-    setMounted(true);
-    // When component mounts or variant changes, animation is not complete
-    onAnimationComplete(false); 
-    frameIndexRef.current = 0;
-  }, [variant.id, onAnimationComplete]);
+  const virtualScroll = useRef(0);
+  const frameIndex = useRef(0);
+  const animationFrameId = useRef<number>();
 
+  const [isMounted, setIsMounted] = useState(false);
+
+  // === IMAGE PRELOADING LOGIC ===
   const getFrameUrl = useCallback((frame: number) => {
     const paddedFrame = String(frame).padStart(3, '0');
     return variant.webpBaseUrl.replace('000', paddedFrame);
@@ -42,52 +46,69 @@ export default function WebpSequence({
   const preloadImages = useCallback(async () => {
     const { frameCount } = variant;
     const promises: Promise<void>[] = [];
-    let loadedCount = 0;
-
+    loadedImagesCount.current = 0;
     imagesRef.current = Array(frameCount).fill(null).map(() => new Image());
 
-    for (let i = 0; i < frameCount; i++) {
+    const onImageLoad = (isInitial: boolean) => {
+      loadedImagesCount.current++;
+      const total = isInitial ? INITIAL_PRELOAD_COUNT : frameCount;
+      const progress = (loadedImagesCount.current / total) * 100;
+      
+      if (isInitialLoad.current) {
+        onInitialLoadProgress(progress);
+      }
+    };
+    
+    // Initial batch for fast interaction
+    for (let i = 0; i < INITIAL_PRELOAD_COUNT; i++) {
       const img = imagesRef.current[i];
-      const promise = new Promise<void>((resolve, reject) => {
+      const promise = new Promise<void>((resolve) => {
         img.onload = () => {
-          loadedCount++;
-          if (isInitialLoad.current) {
-            onInitialLoadProgress((loadedCount / frameCount) * 100);
-          }
+          onImageLoad(true);
           resolve();
         };
-        img.onerror = reject;
+        img.onerror = () => resolve(); // Don't block on error
       });
       img.src = getFrameUrl(i);
       promises.push(promise);
     }
-
+    
     await Promise.all(promises);
 
+    isInitialBatchLoaded.current = true;
     if (isInitialLoad.current) {
-      isInitialLoad.current = false;
       onInitialLoadComplete();
+      isInitialLoad.current = false;
     } else {
       onSwitchComplete();
     }
+    drawFrame();
+
+    // Lazy load the rest
+    for (let i = INITIAL_PRELOAD_COUNT; i < frameCount; i++) {
+        const img = imagesRef.current[i];
+        img.onload = () => onImageLoad(false);
+        img.src = getFrameUrl(i);
+    }
   }, [variant, onInitialLoadComplete, onInitialLoadProgress, onSwitchComplete, getFrameUrl]);
 
-  useEffect(() => {
-    if (mounted) {
-      preloadImages();
-    }
-  }, [preloadImages, mounted]);
-
+  // === DRAWING LOGIC ===
   const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || imagesRef.current.length === 0) return;
+    if (!canvas || !isMounted) return;
     
     const context = canvas.getContext('2d');
     if (!context) return;
     
-    const img = imagesRef.current[frameIndexRef.current];
-    if (!img || !img.complete || img.naturalWidth === 0) return;
+    // Find the closest loaded frame if the target isn't ready
+    let frameToDraw = Math.round(frameIndex.current);
+    while(!imagesRef.current[frameToDraw]?.complete && frameToDraw > 0) {
+      frameToDraw--;
+    }
     
+    const img = imagesRef.current[frameToDraw];
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+
     const hRatio = canvas.width / img.width;
     const vRatio = canvas.height / img.height;
     const ratio = Math.max(hRatio, vRatio);
@@ -96,76 +117,100 @@ export default function WebpSequence({
 
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.drawImage(img, 0, 0, img.width, img.height, centerShift_x, centerShift_y, img.width * ratio, img.height * ratio);
-  }, []);
-  
+  }, [isMounted]);
+
+  // === ANIMATION LOOP ===
+  const animate = useCallback(() => {
+    const progress = virtualScroll.current;
+    const newFrame = progress * (variant.frameCount - 1);
+    
+    // Apply damping
+    const diff = newFrame - frameIndex.current;
+    if (Math.abs(diff) > 0.01) {
+      frameIndex.current += diff * (1 - DAMPING);
+      drawFrame();
+      animationFrameId.current = requestAnimationFrame(animate);
+    } else if (frameIndex.current !== newFrame) {
+      frameIndex.current = newFrame;
+      drawFrame();
+    }
+  }, [variant.frameCount, drawFrame]);
+
+
+  // === EVENT LISTENERS & LIFECYCLE ===
   useEffect(() => {
-    if (!mounted) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    setIsMounted(true);
+    return () => {
+      if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      // Reset state for new variant
+      isInitialBatchLoaded.current = false;
+      virtualScroll.current = 0;
+      frameIndex.current = 0;
+      if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+      
+      preloadImages();
+    }
+  }, [isMounted, preloadImages]);
+
+  useEffect(() => {
+    if (!isMounted) return;
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      requestAnimationFrame(drawFrame);
-    }
+      if (canvasRef.current) {
+        canvasRef.current.width = window.innerWidth;
+        canvasRef.current.height = window.innerHeight;
+        drawFrame();
+      }
+    };
 
     handleResize();
     window.addEventListener('resize', handleResize);
-
-    const firstImg = imagesRef.current[0];
-    if (firstImg && firstImg.complete) {
-      handleResize();
-    } else if (firstImg) {
-      firstImg.onload = handleResize;
-    }
-    
     return () => window.removeEventListener('resize', handleResize);
-  }, [drawFrame, mounted]);
-  
+  }, [isMounted, drawFrame]);
+
   useEffect(() => {
-    if (!mounted) return;
+    if (!isMounted || !isInitialBatchLoaded.current) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       
-      let newFrameIndex = frameIndexRef.current;
-      if (e.deltaY > 0) { // Scrolling down
-        newFrameIndex = Math.min(frameIndexRef.current + SCROLL_SENSITIVITY, variant.frameCount - 1);
-      } else { // Scrolling up
-        newFrameIndex = Math.max(frameIndexRef.current - SCROLL_SENSITIVITY, 0);
-      }
+      const newVirtualScroll = virtualScroll.current + e.deltaY / SCROLL_SENSITIVITY;
+      virtualScroll.current = Math.max(0, Math.min(1, newVirtualScroll));
 
-      newFrameIndex = Math.round(newFrameIndex);
+      // Start animation loop
+      if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+      animationFrameId.current = requestAnimationFrame(animate);
 
-      if (newFrameIndex !== frameIndexRef.current) {
-        frameIndexRef.current = newFrameIndex;
-        requestAnimationFrame(drawFrame);
-      }
-
-      // Check for animation completion
-      if (newFrameIndex >= variant.frameCount - 1) {
-        onAnimationComplete(true);
-      } else {
-        onAnimationComplete(false);
-      }
+      // Report animation completion
+      const isComplete = virtualScroll.current >= 1;
+      onAnimationComplete(isComplete);
     };
-    
-    const mainElement = document.querySelector('main');
-    mainElement?.addEventListener('wheel', handleWheel, { passive: false });
-    
-    return () => {
-      mainElement?.removeEventListener('wheel', handleWheel);
-    };
-  }, [variant.frameCount, drawFrame, mounted, onAnimationComplete]);
 
-  if (!mounted) {
-    return <div className="absolute top-0 left-0 w-full h-full object-cover" />;
-  }
+    const el = canvasRef.current?.parentElement;
+    if (el) {
+      el.addEventListener('wheel', handleWheel, { passive: false });
+      return () => {
+        el.removeEventListener('wheel', handleWheel);
+        if(animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
+      };
+    }
+  }, [isMounted, isSwitching, onAnimationComplete, animate]);
+
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute top-0 left-0 w-full h-full object-cover"
-    />
+    <div className={cn(
+      "fixed top-0 left-0 h-screen w-full z-0 transition-opacity duration-500",
+      isSwitching ? 'opacity-30' : 'opacity-100'
+    )}>
+      <canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full object-cover"
+      />
+    </div>
   );
 }
