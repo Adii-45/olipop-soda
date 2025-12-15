@@ -7,7 +7,7 @@ import { Separator } from '../ui/separator';
 import { useEffect, useState } from 'react';
 
 export default function Footer() {
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -58,7 +58,7 @@ export default function Footer() {
         </div>
         <Separator className="my-8 bg-border" />
         <div className="text-center text-sm text-muted-foreground">
-          © {currentYear} Olipop. All Rights Reserved.
+          © {currentYear || new Date().getFullYear()} Olipop. All Rights Reserved.
         </div>
       </div>
     </footer>
